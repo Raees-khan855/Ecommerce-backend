@@ -14,7 +14,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "ecommerce-backend-q715w1ypy-raees-khan855s-projects.vercel.app", // 👈 add your frontend URL
+      "ecommerce-website-6ihkmd6bd-raees-khan855s-projects.vercel.app", // 👈 add your frontend URL
     ],
     credentials: true,
   })
