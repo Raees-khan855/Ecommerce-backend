@@ -1,34 +1,52 @@
-require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+require("dotenv").config();
 
-const productRoutes = require("./routers/productRoutes.js");
-const heroRoutes = require("./routers/heroRoutes.js");
-const adminRoutes = require("./routers/admin.js"); // login
-const dotenv = require("dotenv");
-
-dotenv.config();
+const productRoutes = require("./routers/productRoutes");
+const heroRoutes = require("./routers/heroRoutes");
+const adminRoutes = require("./routers/admin");
 
 const app = express();
 
-app.use(cors());
+// Middleware
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "ecommerce-backend-q715w1ypy-raees-khan855s-projects.vercel.app", // 👈 add your frontend URL
+    ],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploads if needed
+// Static files (note: Vercel is read-only, uploads won't persist)
 app.use("/uploads", express.static("uploads"));
 
 // Routes
-app.use("/api/admin", adminRoutes);        // admin login
-app.use("/api/products", productRoutes);   // public GET, admin POST/PUT/DELETE inside router
-app.use("/api/hero", heroRoutes);          // public GET, admin POST inside router
+app.use("/api/admin", adminRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/hero", heroRoutes);
 
-// Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ DB error:", err));
+// MongoDB connection (important for serverless)
+let isConnected = false;
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+const connectDB = async () => {
+  if (isConnected) return;
+
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    isConnected = true;
+    console.log("✅ MongoDB connected");
+  } catch (err) {
+    console.error("❌ MongoDB error:", err);
+  }
+};
+
+connectDB();
+
+// ❌ DO NOT app.listen on Vercel
+module.exports = app;
