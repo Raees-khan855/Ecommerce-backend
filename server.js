@@ -10,11 +10,23 @@ const adminRoutes = require("./routers/admin");
 const app = express();
 
 // ===========================
-// ✅ CORS for frontend domain
+// ✅ CORS: allow local + deployed frontend
 // ===========================
+const allowedOrigins = [
+  "http://localhost:5173", // local dev
+  "https://ecommerce-website-492ms53sc-raees-khan855s-projects.vercel.app" // production
+];
+
 app.use(
   cors({
-    origin: "https://ecommerce-website-492ms53sc-raees-khan855s-projects.vercel.app",
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // allow server-to-server or Postman
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
