@@ -9,46 +9,50 @@ const adminRoutes = require("./routers/admin");
 
 const app = express();
 
-/* ✅ MUST be FIRST */
-app.use((req, res, next) => {
-  res.header(
-    "Access-Control-Allow-Origin",
-    "ecommerce-website-492ms53sc-raees-khan855s-projects.vercel.app"
-  );
-  res.header(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, OPTIONS"
-  );
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization"
-  );
-  res.header("Access-Control-Allow-Credentials", "true");
+// ===========================
+// ✅ CORS for frontend domain
+// ===========================
+app.use(
+  cors({
+    origin: "https://ecommerce-website-492ms53sc-raees-khan855s-projects.vercel.app",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
 
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-  next();
-});
-
-/* ALSO keep cors() */
-app.use(cors());
-
+// ===========================
+// Body parsers
+// ===========================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ===========================
+// Routes
+// ===========================
 app.use("/api/admin", adminRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/hero", heroRoutes);
 
-/* MongoDB (serverless safe) */
+// ===========================
+// MongoDB connection (serverless safe)
+// ===========================
 let isConnected = false;
-async function connectDB() {
+
+const connectDB = async () => {
   if (isConnected) return;
-  await mongoose.connect(process.env.MONGO_URI);
-  isConnected = true;
-  console.log("✅ MongoDB connected");
-}
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    isConnected = true;
+    console.log("✅ MongoDB connected");
+  } catch (err) {
+    console.error("❌ MongoDB error:", err);
+  }
+};
+
 connectDB();
 
+// ===========================
+// Export for Vercel
+// ===========================
 module.exports = app;
