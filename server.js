@@ -5,32 +5,58 @@ require("dotenv").config();
 
 const productRoutes = require("./routers/productRoutes");
 const heroRoutes = require("./routers/heroRoutes");
-const adminRoutes = require("./routers/admin.js");
+const adminRoutes = require("./routers/admin");
 
 const app = express();
 
-// Middleware
-app.use(cors({
-  origin: 'https://ecommerce-website-nine-eta-72.vercel.app', // allow your frontend domain
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true
-}));
+/* =======================
+   CORS CONFIG (IMPORTANT)
+======================= */
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://ecommerce-website-nine-eta-72.vercel.app"
+];
 
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization"
+  );
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+
+  // ✅ VERY IMPORTANT: handle preflight
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  next();
+});
+
+/* =======================
+   BODY PARSERS
+======================= */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static files (note: Vercel is read-only, uploads won't persist)
-app.use("/uploads", express.static("uploads"));
-
-// Routes
+/* =======================
+   ROUTES
+======================= */
 app.use("/api/admin", adminRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/hero", heroRoutes);
 
-// MongoDB connection (important for serverless)
+/* =======================
+   MONGODB (SERVERLESS SAFE)
+======================= */
 let isConnected = false;
 
-const connectDB = async () => {
+async function connectDB() {
   if (isConnected) return;
 
   try {
@@ -40,8 +66,11 @@ const connectDB = async () => {
   } catch (err) {
     console.error("❌ MongoDB error:", err);
   }
-};
+}
 
 connectDB();
 
-
+/* =======================
+   EXPORT FOR VERCEL
+======================= */
+module.exports = app;
