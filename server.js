@@ -13,7 +13,7 @@ const app = express();
 app.use((req, res, next) => {
   res.header(
     "Access-Control-Allow-Origin",
-    "https://ecommerce-website-nine-eta-72.vercel.app"
+    "ecommerce-website-492ms53sc-raees-khan855s-projects.vercel.app"
   );
   res.header(
     "Access-Control-Allow-Methods",
