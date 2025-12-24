@@ -10,15 +10,7 @@ const adminRoutes = require("./routers/admin");
 const app = express();
 
 // Middleware
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "ecommerce-website-6ihkmd6bd-raees-khan855s-projects.vercel.app", // 👈 add your frontend URL
-    ],
-    credentials: true,
-  })
-);
+app.use(cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
