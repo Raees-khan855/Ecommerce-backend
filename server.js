@@ -5,12 +5,16 @@ require("dotenv").config();
 
 const productRoutes = require("./routers/productRoutes");
 const heroRoutes = require("./routers/heroRoutes");
-const adminRoutes = require("./routers/admin");
+const adminRoutes = require("./routers/admin.js");
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'https://ecommerce-website-nine-eta-72.vercel.app', // allow your frontend domain
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -40,5 +44,4 @@ const connectDB = async () => {
 
 connectDB();
 
-// ❌ DO NOT app.listen on Vercel
-module.exports = app;
+
