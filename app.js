@@ -10,25 +10,22 @@ const adminRoutes = require("./routers/admin");
 const app = express();
 
 // ===========================
-// ✅ CORS: allow local + deployed frontend
+// CORS
 // ===========================
 const allowedOrigins = [
-  "http://localhost:5173", // local dev
-  "https://ecommerce-website-492ms53sc-raees-khan855s-projects.vercel.app" // production
+  "http://localhost:5173",
+  "https://ecommerce-website-492ms53sc-raees-khan855s-projects.vercel.app",
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (like mobile apps, curl, Postman)
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error("CORS not allowed for this origin"));
+      return callback(new Error("CORS not allowed"));
     },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
@@ -40,34 +37,40 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ===========================
-// Routes
-// ===========================
-app.use("/api/admin", adminRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/hero", heroRoutes);
-
-// ===========================
-// MongoDB connection (serverless safe)
+// MongoDB (serverless-safe)
 // ===========================
 let isConnected = false;
 
 const connectDB = async () => {
   if (isConnected) return;
+
   try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGO_URI);
     isConnected = true;
     console.log("✅ MongoDB connected");
   } catch (err) {
-    console.error("❌ MongoDB connection error:", err);
+    console.error("❌ MongoDB error:", err);
   }
 };
 
-connectDB();
+// Ensure DB connection for every request
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
 
 // ===========================
-// Export for Vercel
+// Routes (NO /api prefix here ❗)
 // ===========================
+app.use("/admin", adminRoutes);
+app.use("/products", productRoutes);
+app.use("/hero", heroRoutes);
+
+// ===========================
+// Health check
+// ===========================
+app.get("/", (req, res) => {
+  res.json({ message: "Ecommerce backend running 🚀" });
+});
+
 module.exports = app;
