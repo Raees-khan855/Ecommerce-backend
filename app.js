@@ -70,7 +70,7 @@ app.use("/hero", heroRoutes);
 // Health check
 // ===========================
 app.get("/", (req, res) => {
-  res.json({ message: "Ecommerce backend running 🚀" });
+  res.json({ message: "API is running 🚀" });
 });
 
 module.exports = app;
