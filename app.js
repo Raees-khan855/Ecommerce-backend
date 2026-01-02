@@ -54,10 +54,13 @@ const connectDB = async () => {
 };
 
 // Ensure DB connection for every request
-app.use(async (req, res, next) => {
-  await connectDB();
+app.use((req, res, next) => {
+  if (!isConnected) {
+    connectDB();
+  }
   next();
 });
+
 
 // ===========================
 // Routes (NO /api prefix here ❗)
