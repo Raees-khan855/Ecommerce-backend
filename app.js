@@ -10,22 +10,11 @@ const adminRoutes = require("./routers/admin");
 const app = express();
 
 // ===========================
-// CORS (Vercel-safe)
+// ✅ CORS (FIXED – ALLOW ALL)
 // ===========================
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://ecommerce-website-492ms53sc-raees-khan855s-projects.vercel.app",
-];
-
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(null, false); // ❗ don’t throw error
-    },
+    origin: true, // allow all origins
     credentials: true,
   })
 );
@@ -37,7 +26,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ===========================
-// MongoDB (PROPER serverless cache)
+// MongoDB (Vercel safe)
 // ===========================
 let cached = global.mongoose;
 
@@ -59,7 +48,7 @@ async function connectDB() {
   return cached.conn;
 }
 
-// Ensure DB connection per request
+// Connect DB per request
 app.use(async (req, res, next) => {
   try {
     await connectDB();
@@ -71,7 +60,7 @@ app.use(async (req, res, next) => {
 });
 
 // ===========================
-// Routes (NO /api prefix here)
+// Routes (NO /api prefix)
 // ===========================
 app.use("/admin", adminRoutes);
 app.use("/products", productRoutes);
