@@ -10,7 +10,7 @@ const adminRoutes = require("./routers/admin");
 const app = express();
 
 // ===========================
-// CORS
+// CORS (Vercel-safe)
 // ===========================
 const allowedOrigins = [
   "http://localhost:5173",
@@ -19,12 +19,12 @@ const allowedOrigins = [
 
 app.use(
   cors({
-    origin: function (origin, callback) {
+    origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error("CORS not allowed"));
+      return callback(null, false); // ❗ don’t throw error
     },
     credentials: true,
   })
@@ -37,33 +37,41 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ===========================
-// MongoDB (serverless-safe)
+// MongoDB (PROPER serverless cache)
 // ===========================
-let isConnected = false;
+let cached = global.mongoose;
 
-const connectDB = async () => {
-  if (isConnected) return;
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
 
+async function connectDB() {
+  if (cached.conn) return cached.conn;
+
+  if (!cached.promise) {
+    cached.promise = mongoose
+      .connect(process.env.MONGO_URI)
+      .then((mongoose) => mongoose);
+  }
+
+  cached.conn = await cached.promise;
+  console.log("✅ MongoDB connected");
+  return cached.conn;
+}
+
+// Ensure DB connection per request
+app.use(async (req, res, next) => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
-    isConnected = true;
-    console.log("✅ MongoDB connected");
+    await connectDB();
+    next();
   } catch (err) {
-    console.error("❌ MongoDB error:", err);
+    console.error("❌ MongoDB connection failed", err);
+    res.status(500).json({ message: "Database connection error" });
   }
-};
-
-// Ensure DB connection for every request
-app.use((req, res, next) => {
-  if (!isConnected) {
-    connectDB();
-  }
-  next();
 });
 
-
 // ===========================
-// Routes (NO /api prefix here ❗)
+// Routes (NO /api prefix here)
 // ===========================
 app.use("/admin", adminRoutes);
 app.use("/products", productRoutes);
