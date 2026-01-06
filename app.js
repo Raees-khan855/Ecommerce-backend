@@ -6,7 +6,7 @@ require("dotenv").config();
 const productRoutes = require("./routers/productRoutes");
 const heroRoutes = require("./routers/heroRoutes");
 const adminRoutes = require("./routers/admin");
-
+const orderRoutes = require("./routers/orderRoutes");
 const app = express();
 
 // ===========================
@@ -65,6 +65,7 @@ app.use(async (req, res, next) => {
 app.use("/admin", adminRoutes);
 app.use("/products", productRoutes);
 app.use("/hero", heroRoutes);
+app.use("/orders", orderRoutes); // ✅ ADD
 
 // ===========================
 // Health check
