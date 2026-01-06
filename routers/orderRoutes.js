@@ -18,10 +18,7 @@ router.post("/", async (req, res) => {
     await order.save();
     res.status(201).json(order);
   } catch (err) {
-    res.status(400).json({
-      message: "Failed to create order",
-      error: err.message,
-    });
+    res.status(400).json({ message: "Failed to create order" });
   }
 });
 
@@ -30,19 +27,17 @@ router.get("/", authMiddleware, async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
     res.json(orders);
-  } catch (err) {
-    res.status(500).json({
-      message: "Failed to fetch orders",
-    });
+  } catch {
+    res.status(500).json({ message: "Failed to fetch orders" });
   }
 });
 
-/* ================= UPDATE ORDER STATUS (ADMIN) ================= */
-router.put("/:id", authMiddleware, async (req, res) => {
+/* ================= CONFIRM ORDER (ADMIN) ================= */
+router.put("/:id/confirm", authMiddleware, async (req, res) => {
   try {
     const order = await Order.findByIdAndUpdate(
       req.params.id,
-      { status: req.body.status },
+      { status: "Confirmed" },
       { new: true }
     );
 
@@ -51,10 +46,8 @@ router.put("/:id", authMiddleware, async (req, res) => {
     }
 
     res.json(order);
-  } catch (err) {
-    res.status(500).json({
-      message: "Failed to update order",
-    });
+  } catch {
+    res.status(500).json({ message: "Confirm failed" });
   }
 });
 
@@ -68,12 +61,9 @@ router.delete("/:id", authMiddleware, async (req, res) => {
     }
 
     await order.deleteOne();
-
     res.json({ message: "Order deleted successfully" });
-  } catch (err) {
-    res.status(500).json({
-      message: "Failed to delete order",
-    });
+  } catch {
+    res.status(500).json({ message: "Delete failed" });
   }
 });
 
