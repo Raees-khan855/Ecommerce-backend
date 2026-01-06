@@ -1,8 +1,7 @@
 const jwt = require("jsonwebtoken");
-
 const JWT_SECRET = process.env.JWT_SECRET || "your_secret_key";
 
-const authMiddleware = (req, res, next) => {
+module.exports = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -13,11 +12,9 @@ const authMiddleware = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.adminId = decoded.id;
+    req.user = decoded; // { id, role }
     next();
   } catch (err) {
-    return res.status(401).json({ message: "Invalid token" });
+    return res.status(401).json({ message: "Invalid or expired token" });
   }
 };
-
-module.exports = authMiddleware;

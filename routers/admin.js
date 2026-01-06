@@ -11,13 +11,31 @@ router.post("/login", async (req, res) => {
 
   try {
     const admin = await Admin.findOne({ username });
-    if (!admin) return res.status(400).json({ message: "Invalid credentials" });
+    if (!admin) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
     const isMatch = await bcrypt.compare(password, admin.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
 
-    const token = jwt.sign({ id: admin._id }, JWT_SECRET, { expiresIn: "1h" });
-    res.json({ token });
+    // ✅ INCLUDE ROLE IN TOKEN
+    const token = jwt.sign(
+      { id: admin._id, role: "admin" },
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    // ✅ SEND USER DATA
+    res.json({
+      token,
+      user: {
+        id: admin._id,
+        username: admin.username,
+        role: "admin",
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });

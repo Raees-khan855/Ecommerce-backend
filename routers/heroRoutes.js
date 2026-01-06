@@ -5,9 +5,7 @@ const authMiddleware = require("../middleware/auth");
 
 const router = express.Router();
 
-// =======================
-// GET HERO (public)
-// =======================
+// GET HERO (PUBLIC)
 router.get("/", async (req, res) => {
   try {
     const hero = await Hero.findOne();
@@ -17,49 +15,37 @@ router.get("/", async (req, res) => {
   }
 });
 
-// =======================
-// CREATE / UPDATE HERO
-// =======================
-router.post(
-  "/",
-  authMiddleware,
-  upload.single("image"),
-  async (req, res) => {
-    try {
-      const { title, subtitle } = req.body;
+// CREATE / UPDATE HERO (ADMIN)
+router.post("/", authMiddleware, upload.single("image"), async (req, res) => {
+  try {
+    const { title, subtitle } = req.body;
 
-      if (!title || !subtitle) {
-        return res.status(400).json({ message: "Title & subtitle required" });
-      }
-
-      if (!req.file) {
-        return res.status(400).json({ message: "Image is required" });
-      }
-
-      // ✅ SAFE IMAGE URL
-      const imageUrl = req.file.secure_url || req.file.path;
-
-      let hero = await Hero.findOne();
-
-      if (hero) {
-        hero.title = title;
-        hero.subtitle = subtitle;
-        hero.image = imageUrl;
-      } else {
-        hero = new Hero({
-          title,
-          subtitle,
-          image: imageUrl,
-        });
-      }
-
-      await hero.save();
-      res.status(201).json(hero);
-    } catch (err) {
-      console.error("Hero upload error:", err);
-      res.status(500).json({ message: err.message });
+    if (!title || !subtitle) {
+      return res.status(400).json({ message: "Title & subtitle required" });
     }
+
+    if (!req.file) {
+      return res.status(400).json({ message: "Image required" });
+    }
+
+    const imageUrl = req.file.secure_url || req.file.path;
+
+    let hero = await Hero.findOne();
+
+    if (hero) {
+      hero.title = title;
+      hero.subtitle = subtitle;
+      hero.image = imageUrl;
+    } else {
+      hero = new Hero({ title, subtitle, image: imageUrl });
+    }
+
+    await hero.save();
+    res.status(201).json(hero);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
   }
-);
+});
 
 module.exports = router;
