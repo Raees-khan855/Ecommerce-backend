@@ -3,6 +3,9 @@ const Order = require("../models/Order");
 const authMiddleware = require("../middleware/auth");
 const sendEmail = require("../utils/sendEmail");
 
+const router = express.Router();
+
+/* ================= CUSTOMER EMAIL TEMPLATE ================= */
 const customerConfirmTemplate = (order) => `
 <!DOCTYPE html>
 <html>
@@ -16,7 +19,7 @@ const customerConfirmTemplate = (order) => `
 
 <table width="600" style="background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);">
 
-<!-- LOGO HEADER -->
+<!-- LOGO -->
 <tr>
 <td style="background:#000;padding:20px;text-align:center;">
   <img src="${process.env.STORE_LOGO}"
@@ -29,9 +32,7 @@ const customerConfirmTemplate = (order) => `
 <tr>
 <td style="padding:20px;text-align:center;">
   <h2 style="color:#28a745;margin-bottom:5px;">✅ Order Confirmed</h2>
-  <p style="color:#555;">Thank you for shopping with ${
-    process.env.STORE_NAME
-  }</p>
+  <p style="color:#555;">Thank you for shopping with ${process.env.STORE_NAME}</p>
 </td>
 </tr>
 
@@ -68,9 +69,16 @@ ${order.products
 <span style="color:#28a745;">₹${order.totalAmount}</span>
 </p>
 
-<p><strong>Delivery Address:</strong><br/>${order.address}</p>
+<p>
+<strong>Delivery Address:</strong><br/>
+${order.address}
+</p>
 
-<p style="margin-top:20px;">🚚 We are preparing your order.</p>
+<p style="margin-top:20px;">🚚 Your order is being prepared and will be shipped soon.</p>
+
+<p style="margin-top:25px;">
+Thank you for choosing <strong>${process.env.STORE_NAME}</strong> ❤️
+</p>
 
 </td>
 </tr>
@@ -91,8 +99,6 @@ ${order.products
 </html>
 `;
 
-const router = express.Router();
-
 /* ================= CREATE ORDER (PUBLIC) ================= */
 router.post("/", async (req, res) => {
   try {
@@ -108,36 +114,40 @@ router.post("/", async (req, res) => {
 
     await order.save();
 
-    // 📧 ADMIN EMAIL
-    try {
-      await sendEmail({
-        to: process.env.ADMIN_EMAIL,
-        subject: "🛒 New Order Received",
-        html: `
-          <h2>New Order Received</h2>
-          <p><b>Name:</b> ${order.customerName}</p>
-          <p><b>Email:</b> ${order.email}</p>
-          <p><b>Phone:</b> ${order.phone}</p>
-          <p><b>Total:</b> ₹${order.totalAmount}</p>
-        `,
-      });
-    } catch (err) {
-      console.error("Admin email failed:", err.message);
-    }
+    /* 📧 ADMIN EMAIL */
+    sendEmail({
+      to: process.env.ADMIN_EMAIL,
+      subject: "🛒 New Order Received",
+      html: `
+        <h2>New Order Received</h2>
+        <p><b>Name:</b> ${order.customerName}</p>
+        <p><b>Email:</b> ${order.email}</p>
+        <p><b>Phone:</b> ${order.phone}</p>
+        <p><b>Total:</b> ₹${order.totalAmount}</p>
+        <p><b>Order ID:</b> ${order._id}</p>
+      `,
+    }).catch((err) =>
+      console.error("❌ Admin email failed:", err.message)
+    );
 
     res.status(201).json(order);
   } catch (err) {
+    console.error("Order creation failed:", err);
     res.status(500).json({ message: "Order creation failed" });
   }
 });
 
-/* ================= GET ALL ORDERS ================= */
+/* ================= GET ALL ORDERS (ADMIN) ================= */
 router.get("/", authMiddleware, async (req, res) => {
-  const orders = await Order.find().sort({ createdAt: -1 });
-  res.json(orders);
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json(orders);
+  } catch {
+    res.status(500).json({ message: "Failed to fetch orders" });
+  }
 });
 
-/* ================= CONFIRM ORDER ================= */
+/* ================= CONFIRM ORDER (ADMIN) ================= */
 router.put("/:id/confirm", authMiddleware, async (req, res) => {
   try {
     const order = await Order.findByIdAndUpdate(
@@ -148,30 +158,33 @@ router.put("/:id/confirm", authMiddleware, async (req, res) => {
 
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    // 📧 CUSTOMER EMAIL (BEAUTIFUL TEMPLATE)
-    try {
-      await sendEmail({
-        to: order.email,
-        subject: "✅ Your Order is Confirmed",
-        html: customerConfirmTemplate(order),
-      });
-    } catch (err) {
-      console.error("Customer email failed:", err.message);
-    }
+    /* 📧 CUSTOMER EMAIL */
+    sendEmail({
+      to: order.email,
+      subject: "✅ Your Order is Confirmed",
+      html: customerConfirmTemplate(order),
+    }).catch((err) =>
+      console.error("❌ Customer email failed:", err.message)
+    );
 
     res.json(order);
-  } catch {
+  } catch (err) {
+    console.error("Confirm failed:", err);
     res.status(500).json({ message: "Confirm failed" });
   }
 });
 
-/* ================= DELETE ORDER ================= */
+/* ================= DELETE ORDER (ADMIN) ================= */
 router.delete("/:id", authMiddleware, async (req, res) => {
-  const order = await Order.findById(req.params.id);
-  if (!order) return res.status(404).json({ message: "Order not found" });
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
 
-  await order.deleteOne();
-  res.json({ message: "Order deleted" });
+    await order.deleteOne();
+    res.json({ message: "Order deleted successfully" });
+  } catch {
+    res.status(500).json({ message: "Delete failed" });
+  }
 });
 
 module.exports = router;
