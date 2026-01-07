@@ -8,8 +8,16 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+transporter.verify((err) => {
+  if (err) {
+    console.error("❌ SMTP ERROR:", err);
+  } else {
+    console.log("✅ SMTP READY");
+  }
+});
+
 const sendEmail = async ({ to, subject, html }) => {
-  await transporter.sendMail({
+  return transporter.sendMail({
     from: `"My Store" <${process.env.EMAIL_USER}>`,
     to,
     subject,
