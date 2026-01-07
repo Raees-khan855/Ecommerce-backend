@@ -1,23 +1,28 @@
- const mongoose = require("mongoose");
+const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema(
   {
-    customerName: String,
-    email: String,
-    address: String,
+    customerName: { type: String, required: true },
+    email: { type: String, required: true },
+    phone: { type: String, required: true }, // ✅ ADD THIS
+    address: { type: String, required: true },
+
     products: [
       {
         productId: mongoose.Schema.Types.ObjectId,
         title: String,
         price: Number,
         quantity: Number,
-        image: String,
+        image: String, // ✅ Image stored here
       },
     ],
-    totalAmount: Number,
+
+    totalAmount: { type: Number, required: true },
+
     status: {
       type: String,
-      default: "Pending", // Pending | Shipped | Delivered
+      enum: ["Pending", "Confirmed", "Shipped", "Delivered"],
+      default: "Pending",
     },
   },
   { timestamps: true }
