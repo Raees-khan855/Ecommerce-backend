@@ -9,92 +9,87 @@ const customerConfirmTemplate = (order) => `
 <head>
   <meta charset="UTF-8" />
 </head>
-<body style="margin:0; padding:0; background:#f4f6f8; font-family:Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="padding:20px;">
-    <tr>
-      <td align="center">
+<body style="margin:0;padding:0;background:#f4f6f8;font-family:Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:20px;">
+<tr>
+<td align="center">
 
-        <table width="600" cellpadding="0" cellspacing="0"
-          style="background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,.1);">
+<table width="600" style="background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);">
 
-          <!-- HEADER -->
-          <tr>
-            <td style="background:#28a745; padding:20px; color:#ffffff; text-align:center;">
-              <h1 style="margin:0;">✅ Order Confirmed</h1>
-              <p style="margin:5px 0 0;">Thank you for shopping with us</p>
-            </td>
-          </tr>
+<!-- LOGO HEADER -->
+<tr>
+<td style="background:#000;padding:20px;text-align:center;">
+  <img src="${process.env.STORE_LOGO}"
+       alt="${process.env.STORE_NAME}"
+       style="max-height:60px;" />
+</td>
+</tr>
 
-          <!-- CONTENT -->
-          <tr>
-            <td style="padding:20px; color:#333;">
-              <p>Hello <strong>${order.customerName}</strong>,</p>
+<!-- TITLE -->
+<tr>
+<td style="padding:20px;text-align:center;">
+  <h2 style="color:#28a745;margin-bottom:5px;">✅ Order Confirmed</h2>
+  <p style="color:#555;">Thank you for shopping with ${
+    process.env.STORE_NAME
+  }</p>
+</td>
+</tr>
 
-              <p>
-                🎉 Your order has been successfully
-                <strong style="color:#28a745;">confirmed</strong>.
-              </p>
+<!-- CONTENT -->
+<tr>
+<td style="padding:20px;color:#333;">
+<p>Hello <strong>${order.customerName}</strong>,</p>
 
-              <h3>📦 Order Summary</h3>
+<p>Your order has been <strong style="color:#28a745;">confirmed</strong>.</p>
 
-              <table width="100%" cellpadding="8" cellspacing="0" style="border-collapse:collapse;">
-                <tr style="background:#f1f1f1;">
-                  <th align="left">Product</th>
-                  <th align="center">Qty</th>
-                </tr>
+<h3 style="margin-top:25px;">📦 Order Items</h3>
 
-                ${order.products
-                  .map(
-                    (p) => `
-                  <tr>
-                    <td>${p.title}</td>
-                    <td align="center">${p.quantity}</td>
-                  </tr>`
-                  )
-                  .join("")}
-              </table>
+<table width="100%" cellpadding="10" cellspacing="0" style="border-collapse:collapse;">
+${order.products
+  .map(
+    (p) => `
+<tr style="border-bottom:1px solid #eee;">
+<td width="80">
+  <img src="${p.image}"
+       style="width:60px;height:60px;object-fit:cover;border-radius:6px;" />
+</td>
+<td>
+  <strong>${p.title}</strong><br/>
+  Qty: ${p.quantity}
+</td>
+</tr>
+`
+  )
+  .join("")}
+</table>
 
-              <p style="margin-top:15px;">
-                <strong>Total Amount:</strong>
-                <span style="color:#28a745;">₹${order.totalAmount}</span>
-              </p>
+<p style="margin-top:15px;">
+<strong>Total Amount:</strong>
+<span style="color:#28a745;">₹${order.totalAmount}</span>
+</p>
 
-              <p>
-                <strong>Delivery Address:</strong><br/>
-                ${order.address}
-              </p>
+<p><strong>Delivery Address:</strong><br/>${order.address}</p>
 
-              <p style="margin-top:20px;">
-                🚚 Your order is being prepared and will be shipped soon.
-              </p>
+<p style="margin-top:20px;">🚚 We are preparing your order.</p>
 
-              <p>
-                Thank you for choosing <strong>My Store</strong> ❤️
-              </p>
+</td>
+</tr>
 
-              <p style="margin-top:30px;">
-                Regards,<br/>
-                <strong>My Store Team</strong>
-              </p>
-            </td>
-          </tr>
+<!-- FOOTER -->
+<tr>
+<td style="background:#f1f1f1;padding:15px;text-align:center;font-size:12px;">
+© ${new Date().getFullYear()} ${process.env.STORE_NAME}. All rights reserved.
+</td>
+</tr>
 
-          <!-- FOOTER -->
-          <tr>
-            <td style="background:#f1f1f1; padding:10px; text-align:center; font-size:12px;">
-              © ${new Date().getFullYear()} My Store. All rights reserved.
-            </td>
-          </tr>
+</table>
 
-        </table>
-
-      </td>
-    </tr>
-  </table>
+</td>
+</tr>
+</table>
 </body>
 </html>
 `;
-
 
 const router = express.Router();
 
