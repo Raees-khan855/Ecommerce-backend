@@ -57,7 +57,33 @@ router.post("/", async (req, res) => {
     res.status(500).json({ message: "Failed to create order" });
   }
 });
+    /* ===============================
+       📧 EMAIL TO CUSTOMER
+    =============================== */
+    await sendEmail({
+      to: order.email,
+      subject: "✅ Order Placed Successfully",
+      html: `
+        <h2>Thank you for your order, ${order.customerName}!</h2>
+        <p>Your order has been received successfully.</p>
 
+        <h3>Order Summary</h3>
+        <ul>
+          ${order.products
+            .map(
+              (p) =>
+                `<li>${p.title} × ${p.quantity}</li>`
+            )
+            .join("")}
+        </ul>
+
+        <p><strong>Total Amount:</strong> ₹${order.totalAmount}</p>
+        <p>We will contact you once your order is confirmed.</p>
+
+        <br />
+        <p>— My Store Team ❤️</p>
+      `,
+    });
 
 /* ================= GET ALL ORDERS (ADMIN) ================= */
 router.get("/", authMiddleware, async (req, res) => {
