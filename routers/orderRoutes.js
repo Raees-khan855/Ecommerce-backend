@@ -13,6 +13,8 @@ router.post("/", async (req, res) => {
       products: req.body.products,
       totalAmount: req.body.totalAmount,
       status: "Pending",
+      email: req.body.email,
+      phone: req.body.phone,
     });
 
     await order.save();
