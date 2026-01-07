@@ -22,43 +22,42 @@ router.post("/", async (req, res) => {
     // 2️⃣ Save order
     await order.save();
 
-    // 3️⃣ SEND EMAIL TO ADMIN 📧
-    await sendEmail({
-      to: process.env.ADMIN_EMAIL,
-      subject: "🛒 New Order Received",
-      html: `
-        <h2>New Order on Your Store</h2>
-        <p><strong>Name:</strong> ${order.customerName}</p>
-        <p><strong>Email:</strong> ${order.email}</p>
-        <p><strong>Phone:</strong> ${order.phone}</p>
-        <p><strong>Address:</strong> ${order.address}</p>
-        <p><strong>Total Amount:</strong> ₹${order.totalAmount}</p>
+    // 3️⃣ Try sending email (DO NOT FAIL ORDER)
+    try {
+      await sendEmail({
+        to: process.env.ADMIN_EMAIL,
+        subject: "🛒 New Order Received",
+        html: `
+          <h2>New Order on Your Store</h2>
+          <p><strong>Name:</strong> ${order.customerName}</p>
+          <p><strong>Email:</strong> ${order.email}</p>
+          <p><strong>Phone:</strong> ${order.phone}</p>
+          <p><strong>Address:</strong> ${order.address}</p>
+          <p><strong>Total Amount:</strong> ₹${order.totalAmount}</p>
 
-        <h3>Ordered Products:</h3>
-        <ul>
-          ${order.products
-            .map(
-              (p) =>
-                `<li>${p.title} × ${p.quantity} (₹${p.price})</li>`
-            )
-            .join("")}
-        </ul>
+          <h3>Products:</h3>
+          <ul>
+            ${order.products
+              .map(
+                (p) =>
+                  `<li>${p.title} × ${p.quantity} (₹${p.price})</li>`
+              )
+              .join("")}
+          </ul>
+        `,
+      });
+    } catch (emailErr) {
+      console.error("❌ Email failed:", emailErr.message);
+    }
 
-        <hr />
-        <p><small>Order ID: ${order._id}</small></p>
-        <p><small>Date: ${new Date(
-          order.createdAt
-        ).toLocaleString()}</small></p>
-      `,
-    });
-
-    // 4️⃣ Send response
+    // 4️⃣ Always return success
     res.status(201).json(order);
   } catch (err) {
     console.error("Order creation failed:", err);
-    res.status(400).json({ message: "Failed to create order" });
+    res.status(500).json({ message: "Failed to create order" });
   }
 });
+
 
 /* ================= GET ALL ORDERS (ADMIN) ================= */
 router.get("/", authMiddleware, async (req, res) => {
