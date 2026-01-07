@@ -156,20 +156,27 @@ router.put("/:id/confirm", authMiddleware, async (req, res) => {
       { new: true }
     );
 
-    if (!order) return res.status(404).json({ message: "Order not found" });
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
 
-    /* 📧 CUSTOMER EMAIL */
-    sendEmail({
+    console.log("📦 Order confirmed:", order._id);
+    console.log("📧 Customer email:", order.email);
+
+    if (!order.email) {
+      console.error("❌ No customer email found");
+      return res.json(order);
+    }
+
+    await sendEmail({
       to: order.email,
       subject: "✅ Your Order is Confirmed",
       html: customerConfirmTemplate(order),
-    }).catch((err) =>
-      console.error("❌ Customer email failed:", err.message)
-    );
+    });
 
     res.json(order);
   } catch (err) {
-    console.error("Confirm failed:", err);
+    console.error("❌ Confirm email error:", err);
     res.status(500).json({ message: "Confirm failed" });
   }
 });
