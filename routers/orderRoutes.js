@@ -17,14 +17,13 @@ const customerConfirmTemplate = (order) => `
 <tr>
 <td align="center">
 
-<table width="600" style="background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);">
+<table width="600" cellpadding="0" cellspacing="0"
+  style="background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);">
 
-<!-- STORE NAME HEADER -->
+<!-- STORE HEADER -->
 <tr>
 <td style="background:#000;padding:20px;text-align:center;">
-  <h1 style="color:#ffffff;margin:0;letter-spacing:1px;">
-    RaeesProduct
-  </h1>
+  <h1 style="color:#ffffff;margin:0;">RaeesProduct</h1>
 </td>
 </tr>
 
@@ -46,19 +45,23 @@ const customerConfirmTemplate = (order) => `
 <h3 style="margin-top:25px;">📦 Order Items</h3>
 
 <table width="100%" cellpadding="10" cellspacing="0" style="border-collapse:collapse;">
-${order.products
-  .map(
-    (p) => `
+${order.products.map(p => `
 <tr style="border-bottom:1px solid #eee;">
+<td width="90">
+  <img src="${p.image}"
+       width="70"
+       height="70"
+       style="object-fit:cover;border-radius:6px;display:block;" />
+</td>
 <td>
   <strong>${p.title}</strong><br/>
   Qty: ${p.quantity}
 </td>
-<td align="right">₹${p.price}</td>
+<td align="right">
+  ₹${p.price}
+</td>
 </tr>
-`
-  )
-  .join("")}
+`).join("")}
 </table>
 
 <p style="margin-top:15px;">
@@ -106,14 +109,14 @@ router.post("/", async (req, res) => {
       email: req.body.email,
       phone: req.body.phone,
       address: req.body.address,
-      products: req.body.products,
+      products: req.body.products, // image URL REQUIRED
       totalAmount: req.body.totalAmount,
       status: "Pending",
     });
 
     await order.save();
 
-    // 📧 ADMIN EMAIL (non-blocking)
+    // 📧 ADMIN EMAIL (NON-BLOCKING)
     sendEmail({
       to: process.env.ADMIN_EMAIL,
       subject: "🛒 New Order Received",
@@ -125,14 +128,19 @@ router.post("/", async (req, res) => {
         <p><b>Total:</b> ₹${order.totalAmount}</p>
         <p><b>Order ID:</b> ${order._id}</p>
       `,
-    }).catch((err) =>
+    }).catch(err =>
       console.error("❌ Admin email failed:", err.message)
     );
 
-    res.status(201).json(order);
+    res.status(201).json({
+      success: true,
+      message: "Order placed successfully",
+      order,
+    });
+
   } catch (err) {
     console.error("❌ Order creation failed:", err);
-    res.status(500).json({ message: "Order creation failed" });
+    res.status(500).json({ success: false, message: "Order creation failed" });
   }
 });
 
@@ -156,23 +164,41 @@ router.put("/:id/confirm", authMiddleware, async (req, res) => {
     );
 
     if (!order) {
-      return res.status(404).json({ message: "Order not found" });
+      return res.status(404).json({ success: false, message: "Order not found" });
     }
 
     if (!order.email) {
-      console.error("❌ Customer email missing");
-      return res.json(order);
+      return res.status(400).json({
+        success: false,
+        message: "Customer email missing"
+      });
     }
 
-    await sendEmail({
-      to: order.email,
-      subject: "✅ Your Order is Confirmed",
-      html: customerConfirmTemplate(order),
-    });
+    try {
+      await sendEmail({
+        to: order.email,
+        subject: "✅ Your Order is Confirmed",
+        html: customerConfirmTemplate(order),
+      });
 
-    res.json(order);
+      return res.json({
+        success: true,
+        message: "Order confirmed & email sent successfully",
+        order,
+      });
+
+    } catch (emailErr) {
+      console.error("❌ Email failed:", emailErr.message);
+
+      return res.status(500).json({
+        success: false,
+        message: "Order confirmed but email failed",
+        emailError: emailErr.message,
+      });
+    }
+
   } catch (err) {
-    console.error("❌ Confirm email error:", err);
+    console.error("❌ Confirm failed:", err);
     res.status(500).json({ message: "Confirm failed" });
   }
 });
@@ -184,7 +210,7 @@ router.delete("/:id", authMiddleware, async (req, res) => {
     if (!order) return res.status(404).json({ message: "Order not found" });
 
     await order.deleteOne();
-    res.json({ message: "Order deleted successfully" });
+    res.json({ success: true, message: "Order deleted successfully" });
   } catch {
     res.status(500).json({ message: "Delete failed" });
   }
