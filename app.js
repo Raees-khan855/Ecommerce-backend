@@ -2,32 +2,34 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
-require("./utils/sendEmail");
+
 const productRoutes = require("./routers/productRoutes");
 const heroRoutes = require("./routers/heroRoutes");
 const adminRoutes = require("./routers/admin");
 const orderRoutes = require("./routers/orderRoutes");
+const sendEmail = require("./utils/sendEmail");
+
 const app = express();
 
-// ===========================
-// ✅ CORS (FIXED – ALLOW ALL)
-// ===========================
+/* ===========================
+   CORS
+=========================== */
 app.use(
   cors({
-    origin: true, // allow all origins
+    origin: true,
     credentials: true,
   })
 );
 
-// ===========================
-// Body parsers
-// ===========================
+/* ===========================
+   Body Parsers
+=========================== */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ===========================
-// MongoDB (Vercel safe)
-// ===========================
+/* ===========================
+   MongoDB (Vercel safe)
+=========================== */
 let cached = global.mongoose;
 
 if (!cached) {
@@ -59,17 +61,35 @@ app.use(async (req, res, next) => {
   }
 });
 
-// ===========================
-// Routes (NO /api prefix)
-// ===========================
+/* ===========================
+   TEST EMAIL ROUTE
+=========================== */
+app.get("/test-email", async (req, res) => {
+  try {
+    await sendEmail({
+      to: process.env.ADMIN_EMAIL,
+      subject: "✅ Test Email",
+      html: "<h2>Email system is working 🎉</h2>",
+    });
+
+    res.send("✅ Email sent successfully");
+  } catch (err) {
+    console.error("❌ Email test failed:", err);
+    res.status(500).send("Email failed");
+  }
+});
+
+/* ===========================
+   Routes
+=========================== */
 app.use("/admin", adminRoutes);
 app.use("/products", productRoutes);
 app.use("/hero", heroRoutes);
-app.use("/orders", orderRoutes); // ✅ ADD
+app.use("/orders", orderRoutes);
 
-// ===========================
-// Health check
-// ===========================
+/* ===========================
+   Health Check
+=========================== */
 app.get("/", (req, res) => {
   res.json({ message: "API is running 🚀" });
 });
