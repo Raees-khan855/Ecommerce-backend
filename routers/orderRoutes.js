@@ -1,25 +1,61 @@
 const express = require("express");
 const Order = require("../models/Order");
 const authMiddleware = require("../middleware/auth");
+const sendEmail = require("../utils/sendEmail"); // ✅ ADD THIS
 
 const router = express.Router();
 
 /* ================= CREATE ORDER (PUBLIC) ================= */
 router.post("/", async (req, res) => {
   try {
+    // 1️⃣ Create order
     const order = new Order({
       customerName: req.body.customerName,
+      email: req.body.email,
+      phone: req.body.phone,
       address: req.body.address,
       products: req.body.products,
       totalAmount: req.body.totalAmount,
       status: "Pending",
-      email: req.body.email,
-      phone: req.body.phone,
     });
 
+    // 2️⃣ Save order
     await order.save();
+
+    // 3️⃣ SEND EMAIL TO ADMIN 📧
+    await sendEmail({
+      to: process.env.ADMIN_EMAIL,
+      subject: "🛒 New Order Received",
+      html: `
+        <h2>New Order on Your Store</h2>
+        <p><strong>Name:</strong> ${order.customerName}</p>
+        <p><strong>Email:</strong> ${order.email}</p>
+        <p><strong>Phone:</strong> ${order.phone}</p>
+        <p><strong>Address:</strong> ${order.address}</p>
+        <p><strong>Total Amount:</strong> ₹${order.totalAmount}</p>
+
+        <h3>Ordered Products:</h3>
+        <ul>
+          ${order.products
+            .map(
+              (p) =>
+                `<li>${p.title} × ${p.quantity} (₹${p.price})</li>`
+            )
+            .join("")}
+        </ul>
+
+        <hr />
+        <p><small>Order ID: ${order._id}</small></p>
+        <p><small>Date: ${new Date(
+          order.createdAt
+        ).toLocaleString()}</small></p>
+      `,
+    });
+
+    // 4️⃣ Send response
     res.status(201).json(order);
   } catch (err) {
+    console.error("Order creation failed:", err);
     res.status(400).json({ message: "Failed to create order" });
   }
 });
