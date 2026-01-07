@@ -2,7 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
-
+require("./utils/sendEmail");
 const productRoutes = require("./routers/productRoutes");
 const heroRoutes = require("./routers/heroRoutes");
 const adminRoutes = require("./routers/admin");
