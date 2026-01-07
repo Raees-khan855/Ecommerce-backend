@@ -21,23 +21,18 @@ const customerConfirmTemplate = (order) => `
 
 <!-- STORE NAME HEADER -->
 <tr>
-  <td style="background:#000;padding:22px;text-align:center;">
-    <span style="
-      color:#ffffff;
-      font-size:28px;
-      font-weight:700;
-      letter-spacing:1px;
-    ">
-      ${process.env.STORE_NAME}
-    </span>
-  </td>
+<td style="background:#000;padding:20px;text-align:center;">
+  <h1 style="color:#ffffff;margin:0;letter-spacing:1px;">
+    RaeesProduct
+  </h1>
+</td>
 </tr>
 
 <!-- TITLE -->
 <tr>
 <td style="padding:20px;text-align:center;">
   <h2 style="color:#28a745;margin-bottom:5px;">✅ Order Confirmed</h2>
-  <p style="color:#555;">Thank you for shopping with ${process.env.STORE_NAME}</p>
+  <p style="color:#555;">Thank you for shopping with RaeesProduct</p>
 </td>
 </tr>
 
@@ -46,24 +41,20 @@ const customerConfirmTemplate = (order) => `
 <td style="padding:20px;color:#333;">
 <p>Hello <strong>${order.customerName}</strong>,</p>
 
-<p>
-Your order has been <strong style="color:#28a745;">successfully confirmed</strong>.
-</p>
+<p>Your order has been <strong style="color:#28a745;">confirmed</strong>.</p>
 
-<h3 style="margin-top:25px;">📦 Order Summary</h3>
+<h3 style="margin-top:25px;">📦 Order Items</h3>
 
 <table width="100%" cellpadding="10" cellspacing="0" style="border-collapse:collapse;">
-<tr style="background:#f1f1f1;">
-  <th align="left">Product</th>
-  <th align="center">Qty</th>
-</tr>
-
 ${order.products
   .map(
     (p) => `
 <tr style="border-bottom:1px solid #eee;">
-  <td>${p.title}</td>
-  <td align="center">${p.quantity}</td>
+<td>
+  <strong>${p.title}</strong><br/>
+  Qty: ${p.quantity}
+</td>
+<td align="right">₹${p.price}</td>
 </tr>
 `
   )
@@ -72,7 +63,7 @@ ${order.products
 
 <p style="margin-top:15px;">
 <strong>Total Amount:</strong>
-<span style="color:#28a745;">₹${order.totalAmount}</span>
+<span style="color:#28a745;"> ₹${order.totalAmount}</span>
 </p>
 
 <p>
@@ -85,7 +76,7 @@ ${order.address}
 </p>
 
 <p style="margin-top:25px;">
-Thank you for choosing <strong>${process.env.STORE_NAME}</strong> ❤️
+Thank you for choosing <strong>RaeesProduct</strong> ❤️
 </p>
 
 </td>
@@ -94,7 +85,7 @@ Thank you for choosing <strong>${process.env.STORE_NAME}</strong> ❤️
 <!-- FOOTER -->
 <tr>
 <td style="background:#f1f1f1;padding:15px;text-align:center;font-size:12px;">
-© ${new Date().getFullYear()} ${process.env.STORE_NAME}. All rights reserved.
+© ${new Date().getFullYear()} RaeesProduct. All rights reserved.
 </td>
 </tr>
 
@@ -122,7 +113,7 @@ router.post("/", async (req, res) => {
 
     await order.save();
 
-    /* 📧 ADMIN EMAIL */
+    // 📧 ADMIN EMAIL (non-blocking)
     sendEmail({
       to: process.env.ADMIN_EMAIL,
       subject: "🛒 New Order Received",
@@ -169,7 +160,7 @@ router.put("/:id/confirm", authMiddleware, async (req, res) => {
     }
 
     if (!order.email) {
-      console.error("❌ No customer email found");
+      console.error("❌ Customer email missing");
       return res.json(order);
     }
 
