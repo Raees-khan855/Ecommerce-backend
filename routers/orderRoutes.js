@@ -19,13 +19,18 @@ const customerConfirmTemplate = (order) => `
 
 <table width="600" style="background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);">
 
-<!-- LOGO -->
+<!-- STORE NAME HEADER -->
 <tr>
-<td style="background:#000;padding:20px;text-align:center;">
-  <img src="${process.env.STORE_LOGO}"
-       alt="${process.env.STORE_NAME}"
-       style="max-height:60px;" />
-</td>
+  <td style="background:#000;padding:22px;text-align:center;">
+    <span style="
+      color:#ffffff;
+      font-size:28px;
+      font-weight:700;
+      letter-spacing:1px;
+    ">
+      ${process.env.STORE_NAME}
+    </span>
+  </td>
 </tr>
 
 <!-- TITLE -->
@@ -41,23 +46,24 @@ const customerConfirmTemplate = (order) => `
 <td style="padding:20px;color:#333;">
 <p>Hello <strong>${order.customerName}</strong>,</p>
 
-<p>Your order has been <strong style="color:#28a745;">confirmed</strong>.</p>
+<p>
+Your order has been <strong style="color:#28a745;">successfully confirmed</strong>.
+</p>
 
-<h3 style="margin-top:25px;">📦 Order Items</h3>
+<h3 style="margin-top:25px;">📦 Order Summary</h3>
 
 <table width="100%" cellpadding="10" cellspacing="0" style="border-collapse:collapse;">
+<tr style="background:#f1f1f1;">
+  <th align="left">Product</th>
+  <th align="center">Qty</th>
+</tr>
+
 ${order.products
   .map(
     (p) => `
 <tr style="border-bottom:1px solid #eee;">
-<td width="80">
-  <img src="${p.image}"
-       style="width:60px;height:60px;object-fit:cover;border-radius:6px;" />
-</td>
-<td>
-  <strong>${p.title}</strong><br/>
-  Qty: ${p.quantity}
-</td>
+  <td>${p.title}</td>
+  <td align="center">${p.quantity}</td>
 </tr>
 `
   )
@@ -74,7 +80,9 @@ ${order.products
 ${order.address}
 </p>
 
-<p style="margin-top:20px;">🚚 Your order is being prepared and will be shipped soon.</p>
+<p style="margin-top:20px;">
+🚚 Your order is being prepared and will be shipped soon.
+</p>
 
 <p style="margin-top:25px;">
 Thank you for choosing <strong>${process.env.STORE_NAME}</strong> ❤️
@@ -132,7 +140,7 @@ router.post("/", async (req, res) => {
 
     res.status(201).json(order);
   } catch (err) {
-    console.error("Order creation failed:", err);
+    console.error("❌ Order creation failed:", err);
     res.status(500).json({ message: "Order creation failed" });
   }
 });
@@ -159,9 +167,6 @@ router.put("/:id/confirm", authMiddleware, async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-
-    console.log("📦 Order confirmed:", order._id);
-    console.log("📧 Customer email:", order.email);
 
     if (!order.email) {
       console.error("❌ No customer email found");
