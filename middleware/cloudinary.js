@@ -2,9 +2,9 @@ const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
 
-// ===========================
-// Cloudinary config
-// ===========================
+/* ===========================
+   CLOUDINARY CONFIG
+=========================== */
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -12,7 +12,9 @@ cloudinary.config({
   secure: true,
 });
 
-// Safety check
+/* ===========================
+   SAFETY CHECK
+=========================== */
 if (
   !process.env.CLOUDINARY_CLOUD_NAME ||
   !process.env.CLOUDINARY_API_KEY ||
@@ -21,18 +23,38 @@ if (
   console.error("❌ Cloudinary environment variables are missing");
 }
 
-// ===========================
-// Multer storage
-// ===========================
+/* ===========================
+   MULTER STORAGE (MULTI IMAGE)
+=========================== */
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: {
-    folder: "ecommerce_products",
-    allowed_formats: ["jpg", "jpeg", "png", "webp"],
-    resource_type: "image",
+  params: async (req, file) => {
+    return {
+      folder: "ecommerce_products",
+      format: file.mimetype.split("/")[1], // auto format
+      public_id: `${Date.now()}-${file.originalname.split(".")[0]}`,
+      resource_type: "image",
+    };
   },
 });
 
-const upload = multer({ storage });
+/* ===========================
+   MULTER CONFIG
+=========================== */
+const upload = multer({
+  storage,
+  limits: {
+    files: 5, // ✅ MAX 5 IMAGES
+    fileSize: 5 * 1024 * 1024, // ✅ 5MB per image
+  },
+  fileFilter: (req, file, cb) => {
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+    if (!allowed.includes(file.mimetype)) {
+      cb(new Error("Only JPG, PNG, WEBP images allowed"), false);
+    } else {
+      cb(null, true);
+    }
+  },
+});
 
 module.exports = upload;

@@ -7,7 +7,7 @@ const authMiddleware = require("../middleware/auth");
 const router = express.Router();
 
 /* ===========================
-   GET ALL PRODUCTS (public)
+   GET ALL PRODUCTS (PUBLIC)
    Supports: ?category=
 =========================== */
 router.get("/", async (req, res) => {
@@ -39,7 +39,6 @@ router.get("/featured/all", async (req, res) => {
 
 /* ===========================
    GET SINGLE PRODUCT + RELATED
-   ⚠️ MUST BE AFTER /featured/all
 =========================== */
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
@@ -60,7 +59,7 @@ router.get("/:id", async (req, res) => {
       _id: { $ne: product._id },
     })
       .limit(4)
-      .select("title price image category");
+      .select("title price mainImage category");
 
     res.json({ product, related });
   } catch (err) {
@@ -69,66 +68,91 @@ router.get("/:id", async (req, res) => {
 });
 
 /* ===========================
-   CREATE PRODUCT (admin)
+   CREATE PRODUCT (ADMIN)
+   Supports 1–5 images
 =========================== */
-router.post("/", authMiddleware, upload.single("image"), async (req, res) => {
-  try {
-    const { title, price, description, category, featured } = req.body;
+router.post(
+  "/",
+  authMiddleware,
+  upload.array("images", 5),
+  async (req, res) => {
+    try {
+      const { title, price, description, category, featured } = req.body;
 
-    if (!title || !price || !description || !category || !req.file) {
-      return res.status(400).json({ message: "All fields are required!" });
+      if (
+        !title ||
+        !price ||
+        !description ||
+        !category ||
+        !req.files ||
+        req.files.length === 0
+      ) {
+        return res.status(400).json({
+          message: "All fields & at least one image are required!",
+        });
+      }
+
+      const imageUrls = req.files.map((file) => file.path);
+
+      const product = new Product({
+        title,
+        price: Number(price),
+        description,
+        category,
+        images: imageUrls,
+        featured: String(featured) === "true",
+      });
+
+      await product.save();
+      res.status(201).json(product);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
     }
-
-    const product = new Product({
-      title,
-      price: Number(price),
-      description,
-      category,
-      image: req.file.path, // Cloudinary URL
-      featured: String(featured) === "true",
-    });
-
-    await product.save();
-    res.status(201).json(product);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
   }
-});
+);
 
 /* ===========================
-   UPDATE PRODUCT (admin)
+   UPDATE PRODUCT (ADMIN)
+   Optional new images
 =========================== */
-router.put("/:id", authMiddleware, upload.single("image"), async (req, res) => {
-  try {
-    const updateData = {
-      title: req.body.title,
-      price: Number(req.body.price),
-      description: req.body.description,
-      category: req.body.category,
-    };
+router.put(
+  "/:id",
+  authMiddleware,
+  upload.array("images", 5),
+  async (req, res) => {
+    try {
+      const updateData = {
+        title: req.body.title,
+        price: Number(req.body.price),
+        description: req.body.description,
+        category: req.body.category,
+        featured: String(req.body.featured) === "true",
+      };
 
-    if (req.file) {
-      updateData.image = req.file.path;
+      if (req.files && req.files.length > 0) {
+        updateData.images = req.files.map((file) => file.path);
+        updateData.mainImage = updateData.images[0];
+      }
+
+      const updatedProduct = await Product.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        { new: true }
+      );
+
+      if (!updatedProduct) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      res.json(updatedProduct);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
     }
-
-    const updatedProduct = await Product.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    );
-
-    if (!updatedProduct) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-
-    res.json(updatedProduct);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
   }
-});
+);
 
 /* ===========================
-   DELETE PRODUCT (admin)
+   DELETE PRODUCT (ADMIN)
 =========================== */
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
