@@ -79,17 +79,8 @@ router.post(
     try {
       const { title, price, description, category, featured } = req.body;
 
-      if (
-        !title ||
-        !price ||
-        !description ||
-        !category ||
-        !req.files ||
-        req.files.length === 0
-      ) {
-        return res.status(400).json({
-          message: "All fields & at least one image are required!",
-        });
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ message: "At least one image required" });
       }
 
       const imageUrls = req.files.map((file) => file.path);
@@ -100,6 +91,7 @@ router.post(
         description,
         category,
         images: imageUrls,
+        mainImage: imageUrls[0], // ⭐ important
         featured: String(featured) === "true",
       });
 
@@ -110,6 +102,7 @@ router.post(
     }
   }
 );
+
 
 /* ===========================
    UPDATE PRODUCT (ADMIN)
@@ -130,8 +123,9 @@ router.put(
       };
 
       if (req.files && req.files.length > 0) {
-        updateData.images = req.files.map((file) => file.path);
-        updateData.mainImage = updateData.images[0];
+        const imageUrls = req.files.map((file) => file.path);
+        updateData.images = imageUrls;
+        updateData.mainImage = imageUrls[0];
       }
 
       const updatedProduct = await Product.findByIdAndUpdate(
