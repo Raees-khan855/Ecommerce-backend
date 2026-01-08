@@ -1,65 +1,171 @@
+const express = require("express");
 const mongoose = require("mongoose");
+const Product = require("../models/Product");
+const upload = require("../middleware/cloudinary");
+const authMiddleware = require("../middleware/auth");
 
-const productSchema = new mongoose.Schema(
-  {
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+const router = express.Router();
 
-    description: {
-      type: String,
-      required: true,
-    },
+/* ===========================
+   GET ALL PRODUCTS (PUBLIC)
+   Supports: ?category=
+=========================== */
+router.get("/", async (req, res) => {
+  try {
+    const filter = {};
 
-    price: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
+    if (req.query.category) {
+      filter.category = req.query.category;
+    }
 
-    category: {
-      type: String,
-      required: true,
-    },
-
-    // ✅ MULTIPLE IMAGES (1–5)
-    images: {
-      type: [String], // Cloudinary URLs
-      required: true,
-      validate: {
-        validator: function (arr) {
-          return arr.length >= 1 && arr.length <= 5;
-        },
-        message: "Product must have between 1 and 5 images",
-      },
-    },
-
-    // OPTIONAL: main image shortcut (first image)
-    mainImage: {
-      type: String,
-    },
-
-    stock: {
-      type: Number,
-      default: 10,
-    },
-
-    featured: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  { timestamps: true }
-);
-
-/* AUTO SET MAIN IMAGE */
-productSchema.pre("save", function (next) {
-  if (this.images && this.images.length > 0) {
-    this.mainImage = this.images[0];
+    const products = await Product.find(filter).sort({ createdAt: -1 });
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
-  next();
 });
 
-module.exports = mongoose.model("Product", productSchema);
+/* ===========================
+   GET FEATURED PRODUCTS
+=========================== */
+router.get("/featured/all", async (req, res) => {
+  try {
+    const products = await Product.find({ featured: true }).limit(8);
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/* ===========================
+   GET SINGLE PRODUCT + RELATED
+=========================== */
+router.get("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid product ID" });
+  }
+
+  try {
+    const product = await Product.findById(id);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const related = await Product.find({
+      category: product.category,
+      _id: { $ne: product._id },
+    })
+      .limit(4)
+      .select("title price mainImage category");
+
+    res.json({ product, related });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+/* ===========================
+   CREATE PRODUCT (ADMIN)
+   Supports 1–5 images
+=========================== */
+router.post(
+  "/",
+  authMiddleware,
+  upload.array("images", 5),
+  async (req, res) => {
+    try {
+      const { title, price, description, category, featured } = req.body;
+
+      if (
+        !title ||
+        !price ||
+        !description ||
+        !category ||
+        !req.files ||
+        req.files.length === 0
+      ) {
+        return res.status(400).json({
+          message: "All fields & at least one image are required!",
+        });
+      }
+
+      const imageUrls = req.files.map((file) => file.path);
+
+      const product = new Product({
+        title,
+        price: Number(price),
+        description,
+        category,
+        images: imageUrls,
+        featured: String(featured) === "true",
+      });
+
+      await product.save();
+      res.status(201).json(product);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  }
+);
+
+/* ===========================
+   UPDATE PRODUCT (ADMIN)
+   Optional new images
+=========================== */
+router.put(
+  "/:id",
+  authMiddleware,
+  upload.array("images", 5),
+  async (req, res) => {
+    try {
+      const updateData = {
+        title: req.body.title,
+        price: Number(req.body.price),
+        description: req.body.description,
+        category: req.body.category,
+        featured: String(req.body.featured) === "true",
+      };
+
+      if (req.files && req.files.length > 0) {
+        updateData.images = req.files.map((file) => file.path);
+        updateData.mainImage = updateData.images[0];
+      }
+
+      const updatedProduct = await Product.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        { new: true }
+      );
+
+      if (!updatedProduct) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
+      res.json(updatedProduct);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  }
+);
+
+/* ===========================
+   DELETE PRODUCT (ADMIN)
+=========================== */
+router.delete("/:id", authMiddleware, async (req, res) => {
+  try {
+    const deletedProduct = await Product.findByIdAndDelete(req.params.id);
+
+    if (!deletedProduct) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.json({ message: "Product deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+module.exports = router;
