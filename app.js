@@ -8,7 +8,7 @@ const heroRoutes = require("./routers/heroRoutes");
 const adminRoutes = require("./routers/admin");
 const orderRoutes = require("./routers/orderRoutes");
 const sendEmail = require("./utils/sendEmail");
-
+const contactRoutes = require("./routers/contact");
 const app = express();
 
 /* ===========================
@@ -86,7 +86,7 @@ app.use("/admin", adminRoutes);
 app.use("/products", productRoutes);
 app.use("/hero", heroRoutes);
 app.use("/orders", orderRoutes);
-
+app.use("/contact", contactRoutes);
 /* ===========================
    Health Check
 =========================== */
