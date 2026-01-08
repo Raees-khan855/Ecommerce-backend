@@ -29,12 +29,10 @@ router.get("/", async (req, res) => {
    GET FEATURED PRODUCTS
 =========================== */
 router.get("/featured/all", async (req, res) => {
-  try {
-    const products = await Product.find({ featured: true }).limit(8);
-    res.json(products);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+  const products = await Product.find({ featured: true })
+    .limit(8)
+    .select("title price images mainImage category");
+  res.json(products);
 });
 
 /* ===========================
