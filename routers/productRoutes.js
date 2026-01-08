@@ -53,13 +53,12 @@ router.get("/:id", async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
-
     const related = await Product.find({
       category: product.category,
       _id: { $ne: product._id },
     })
       .limit(4)
-      .select("title price mainImage category");
+      .select("title price images mainImage category");
 
     res.json({ product, related });
   } catch (err) {
