@@ -83,7 +83,7 @@ router.post(
         return res.status(400).json({ message: "At least one image required" });
       }
 
-      const imageUrls = req.files.map((file) => file.path);
+      const imageUrls = req.files.map((f) => f.path);
 
       const product = new Product({
         title,
@@ -91,8 +91,7 @@ router.post(
         description,
         category,
         images: imageUrls,
-        mainImage: imageUrls[0], // ⭐ important
-        featured: String(featured) === "true",
+        featured: featured === "true",
       });
 
       await product.save();
