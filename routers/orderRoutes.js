@@ -58,7 +58,7 @@ ${order.products.map(p => `
   Qty: ${p.quantity}
 </td>
 <td align="right">
-  ₹${p.price}
+  Rs.${p.price}
 </td>
 </tr>
 `).join("")}
@@ -66,7 +66,7 @@ ${order.products.map(p => `
 
 <p style="margin-top:15px;">
 <strong>Total Amount:</strong>
-<span style="color:#28a745;"> ₹${order.totalAmount}</span>
+<span style="color:#28a745;"> Rs.${order.totalAmount}</span>
 </p>
 
 <p>
