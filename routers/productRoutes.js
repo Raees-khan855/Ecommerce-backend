@@ -7,15 +7,22 @@ const authMiddleware = require("../middleware/auth");
 const router = express.Router();
 
 /* ===========================
-   GET ALL PRODUCTS (PUBLIC)
-   Supports: ?category=
+   GET ALL PRODUCTS + SEARCH
+   Supports:
+   ?category=
+   ?search=
 =========================== */
 router.get("/", async (req, res) => {
   try {
+    const { category, search } = req.query;
     const filter = {};
 
-    if (req.query.category) {
-      filter.category = req.query.category;
+    if (category) {
+      filter.category = category;
+    }
+
+    if (search) {
+      filter.title = { $regex: search, $options: "i" };
     }
 
     const products = await Product.find(filter).sort({ createdAt: -1 });
@@ -51,6 +58,7 @@ router.get("/:id", async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
+
     const related = await Product.find({
       category: product.category,
       _id: { $ne: product._id },
@@ -66,7 +74,6 @@ router.get("/:id", async (req, res) => {
 
 /* ===========================
    CREATE PRODUCT (ADMIN)
-   Supports 1–5 images
 =========================== */
 router.post(
   "/",
@@ -88,6 +95,7 @@ router.post(
         description,
         category,
         images: imageUrls,
+        mainImage: imageUrls[0],
         featured: featured === "true",
       });
 
@@ -99,10 +107,8 @@ router.post(
   }
 );
 
-
 /* ===========================
    UPDATE PRODUCT (ADMIN)
-   Optional new images
 =========================== */
 router.put(
   "/:id",
