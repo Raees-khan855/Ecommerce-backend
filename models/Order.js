@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const orderSchema = new mongoose.Schema(
   {
     customerName: { type: String, required: true },
-    email: { type: String, required: true },
+    email: { type: String},
     phone: { type: String, required: true }, // ✅ ADD THIS
     address: { type: String, required: true },
 
