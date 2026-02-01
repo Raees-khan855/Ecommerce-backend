@@ -116,36 +116,53 @@ router.put(
   upload.array("images", 5),
   async (req, res) => {
     try {
-      const updateData = {
-        title: req.body.title,
-        price: Number(req.body.price),
-        description: req.body.description,
-        category: req.body.category,
-        featured: String(req.body.featured) === "true",
-      };
+      const product = await Product.findById(req.params.id);
 
-      if (req.files && req.files.length > 0) {
-        const imageUrls = req.files.map((file) => file.path);
-        updateData.images = imageUrls;
-        updateData.mainImage = imageUrls[0];
-      }
-
-      const updatedProduct = await Product.findByIdAndUpdate(
-        req.params.id,
-        updateData,
-        { new: true }
-      );
-
-      if (!updatedProduct) {
+      if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
 
-      res.json(updatedProduct);
+      /* ===== BASIC FIELDS ===== */
+      product.title = req.body.title;
+      product.price = Number(req.body.price);
+      product.description = req.body.description;
+      product.category = req.body.category;
+      product.featured = String(req.body.featured) === "true";
+
+      /* ===================================================
+         CASE 1 — New files uploaded → replace images
+      =================================================== */
+      if (req.files && req.files.length > 0) {
+        const imageUrls = req.files.map((file) => file.path);
+
+        product.images = imageUrls;
+        product.mainImage = imageUrls[0];
+      }
+
+      /* ===================================================
+         CASE 2 — Only reorder existing images
+      =================================================== */
+      if (req.body.imageOrder) {
+        const order = JSON.parse(req.body.imageOrder);
+
+        // convert full URLs back to stored paths
+        const cleaned = order.map((url) =>
+          url.replace(process.env.BACKEND_URL + "/", "")
+        );
+
+        product.images = cleaned;
+        product.mainImage = cleaned[0];
+      }
+
+      await product.save();
+
+      res.json(product);
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
   }
 );
+
 
 /* ===========================
    DELETE PRODUCT (ADMIN)
