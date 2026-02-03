@@ -3,9 +3,9 @@ const mongoose = require("mongoose");
 const orderSchema = new mongoose.Schema(
   {
     customerName: { type: String, required: true },
-    email: { type: String},
-    phone: { type: String, required: true }, // ✅ ADD THIS
-    whatsapp: { type: String, required: true }, // ✅ ADD THIS
+    email: { type: String },
+    phone: { type: String, required: true },
+    whatsapp: { type: String, required: true },
     address: { type: String, required: true },
 
     products: [
@@ -14,7 +14,9 @@ const orderSchema = new mongoose.Schema(
         title: String,
         price: Number,
         quantity: Number,
-        image: String, // ✅ Image stored here
+        image: String, // image of selected product
+        selectedColor: String, // ✅ color selected by customer
+        selectedSize: String,  // ✅ size selected by customer
       },
     ],
 

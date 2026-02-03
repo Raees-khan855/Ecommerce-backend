@@ -8,22 +8,15 @@ const router = express.Router();
 
 /* ===========================
    GET ALL PRODUCTS + SEARCH
-   Supports:
-   ?category=
-   ?search=
+   Supports: ?category= & ?search=
 =========================== */
 router.get("/", async (req, res) => {
   try {
     const { category, search } = req.query;
     const filter = {};
 
-    if (category) {
-      filter.category = category;
-    }
-
-    if (search) {
-      filter.title = { $regex: search, $options: "i" };
-    }
+    if (category) filter.category = category;
+    if (search) filter.title = { $regex: search, $options: "i" };
 
     const products = await Product.find(filter).sort({ createdAt: -1 });
     res.json(products);
@@ -38,7 +31,7 @@ router.get("/", async (req, res) => {
 router.get("/featured/all", async (req, res) => {
   const products = await Product.find({ featured: true })
     .limit(8)
-    .select("title price images mainImage category");
+    .select("title price images mainImage category colors sizes");
   res.json(products);
 });
 
@@ -48,23 +41,20 @@ router.get("/featured/all", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
+  if (!mongoose.Types.ObjectId.isValid(id))
     return res.status(400).json({ message: "Invalid product ID" });
-  }
 
   try {
     const product = await Product.findById(id);
 
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
+    if (!product) return res.status(404).json({ message: "Product not found" });
 
     const related = await Product.find({
       category: product.category,
       _id: { $ne: product._id },
     })
       .limit(4)
-      .select("title price images mainImage category");
+      .select("title price images mainImage category colors sizes");
 
     res.json({ product, related });
   } catch (err) {
@@ -81,11 +71,10 @@ router.post(
   upload.array("images", 5),
   async (req, res) => {
     try {
-      const { title, price, description, category, featured } = req.body;
+      const { title, price, description, category, featured, colors, sizes } = req.body;
 
-      if (!req.files || req.files.length === 0) {
+      if (!req.files || req.files.length === 0)
         return res.status(400).json({ message: "At least one image required" });
-      }
 
       const imageUrls = req.files.map((f) => f.path);
 
@@ -97,6 +86,8 @@ router.post(
         images: imageUrls,
         mainImage: imageUrls[0],
         featured: featured === "true",
+        colors: colors ? JSON.parse(colors) : [], // ✅ parse colors JSON string
+        sizes: sizes ? JSON.parse(sizes) : [],   // ✅ parse sizes JSON string
       });
 
       await product.save();
@@ -118,51 +109,43 @@ router.put(
     try {
       const product = await Product.findById(req.params.id);
 
-      if (!product) {
-        return res.status(404).json({ message: "Product not found" });
-      }
+      if (!product) return res.status(404).json({ message: "Product not found" });
 
-      /* ===== BASIC FIELDS ===== */
-      product.title = req.body.title;
-      product.price = Number(req.body.price);
-      product.description = req.body.description;
-      product.category = req.body.category;
-      product.featured = String(req.body.featured) === "true";
+      const { title, price, description, category, featured, colors, sizes, imageOrder } = req.body;
 
-      /* ===================================================
-         CASE 1 — New files uploaded → replace images
-      =================================================== */
+      // ✅ Update basic fields
+      product.title = title;
+      product.price = Number(price);
+      product.description = description;
+      product.category = category;
+      product.featured = String(featured) === "true";
+
+      // ✅ Update colors and sizes
+      product.colors = colors ? JSON.parse(colors) : [];
+      product.sizes = sizes ? JSON.parse(sizes) : [];
+
+      // ✅ CASE 1 — New files uploaded → replace images
       if (req.files && req.files.length > 0) {
         const imageUrls = req.files.map((file) => file.path);
-
         product.images = imageUrls;
         product.mainImage = imageUrls[0];
       }
 
-      /* ===================================================
-         CASE 2 — Only reorder existing images
-      =================================================== */
-      if (req.body.imageOrder) {
-        const order = JSON.parse(req.body.imageOrder);
-
-        // convert full URLs back to stored paths
-        const cleaned = order.map((url) =>
-          url.replace(process.env.BACKEND_URL + "/", "")
-        );
-
+      // ✅ CASE 2 — Only reorder existing images
+      if (imageOrder) {
+        const order = JSON.parse(imageOrder);
+        const cleaned = order.map((url) => url.replace(process.env.BACKEND_URL + "/", ""));
         product.images = cleaned;
         product.mainImage = cleaned[0];
       }
 
       await product.save();
-
       res.json(product);
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
   }
 );
-
 
 /* ===========================
    DELETE PRODUCT (ADMIN)
@@ -171,9 +154,8 @@ router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const deletedProduct = await Product.findByIdAndDelete(req.params.id);
 
-    if (!deletedProduct) {
+    if (!deletedProduct)
       return res.status(404).json({ message: "Product not found" });
-    }
 
     res.json({ message: "Product deleted successfully" });
   } catch (err) {

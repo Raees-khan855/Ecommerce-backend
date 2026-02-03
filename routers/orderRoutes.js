@@ -61,12 +61,32 @@ router.post("/", async (req, res) => {
     const { customerName, email, phone, whatsapp, address, products, totalAmount } = req.body;
 
     // Validate required fields
-    if (!customerName || !phone || !whatsapp || !address || !products || !Array.isArray(products) || products.length === 0 || !totalAmount) {
+    if (
+      !customerName ||
+      !phone ||
+      !whatsapp ||
+      !address ||
+      !products ||
+      !Array.isArray(products) ||
+      products.length === 0 ||
+      !totalAmount
+    ) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields or cart is empty",
       });
     }
+
+    // Ensure each product has selectedColor and selectedSize
+    const validatedProducts = products.map(p => ({
+      productId: p.productId,
+      title: p.title,
+      price: p.price,
+      quantity: p.quantity,
+      image: p.image,
+      selectedColor: p.selectedColor || "", // default empty if not provided
+      selectedSize: p.selectedSize || "",   // default empty if not provided
+    }));
 
     const order = new Order({
       customerName,
@@ -74,7 +94,7 @@ router.post("/", async (req, res) => {
       phone,
       whatsapp,
       address,
-      products,
+      products: validatedProducts,
       totalAmount,
       status: "Pending",
     });
@@ -106,6 +126,7 @@ router.post("/", async (req, res) => {
     res.status(500).json({ success: false, message: "Order creation failed", error: err.message });
   }
 });
+
 
 /* ================= GET ALL ORDERS (ADMIN) ================= */
 router.get("/", authMiddleware, async (req, res) => {
