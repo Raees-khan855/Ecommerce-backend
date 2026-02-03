@@ -14,9 +14,11 @@ const orderSchema = new mongoose.Schema(
         title: String,
         price: Number,
         quantity: Number,
-        image: String, // image of selected product
-        selectedColor: String, // ✅ color selected by customer
-        selectedSize: String,  // ✅ size selected by customer
+        image: String,
+
+        // ✅ IMPORTANT — SAME NAME EVERYWHERE
+        selectedColor: { type: String, default: "" },
+        selectedSize: { type: String, default: "" },
       },
     ],
 
@@ -28,7 +30,7 @@ const orderSchema = new mongoose.Schema(
       default: "Pending",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Order", orderSchema);

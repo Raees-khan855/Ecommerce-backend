@@ -58,9 +58,16 @@ ${order.products.map(p => `
 /* ================= CREATE ORDER (PUBLIC) ================= */
 router.post("/", async (req, res) => {
   try {
-    const { customerName, email, phone, whatsapp, address, products, totalAmount } = req.body;
+    const {
+      customerName,
+      email,
+      phone,
+      whatsapp,
+      address,
+      products,
+      totalAmount,
+    } = req.body;
 
-    // Validate required fields
     if (
       !customerName ||
       !phone ||
@@ -73,19 +80,21 @@ router.post("/", async (req, res) => {
     ) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields or cart is empty",
+        message: "Missing required fields or cart empty",
       });
     }
 
-    // Ensure each product has selectedColor and selectedSize
-    const validatedProducts = products.map(p => ({
+    // ✅ FIXED — map correctly
+    const validatedProducts = products.map((p) => ({
       productId: p.productId,
       title: p.title,
       price: p.price,
       quantity: p.quantity,
       image: p.image,
-      selectedColor: p.selectedColor || "", // default empty if not provided
-      selectedSize: p.selectedSize || "",   // default empty if not provided
+
+      // 🔥 MUST MATCH schema
+      selectedColor: p.selectedColor || "",
+      selectedSize: p.selectedSize || "",
     }));
 
     const order = new Order({
@@ -101,31 +110,17 @@ router.post("/", async (req, res) => {
 
     await order.save();
 
-    // Send admin notification (non-blocking)
-    sendEmail({
-      to: process.env.ADMIN_EMAIL,
-      subject: "🛒 New Order Received",
-      html: `
-        <h2>New Order Received</h2>
-        <p><b>Name:</b> ${order.customerName}</p>
-        <p><b>Email:</b> ${order.email || "N/A"}</p>
-        <p><b>Phone:</b> ${order.phone}</p>
-        <p><b>Total:</b> Rs.${order.totalAmount}</p>
-        <p><b>Order ID:</b> ${order._id}</p>
-      `,
-    }).catch(err => console.error("❌ Admin email failed:", err.message));
-
     res.status(201).json({
       success: true,
       message: "Order placed successfully",
       order,
     });
-
   } catch (err) {
-    console.error("❌ Order creation failed:", err);
-    res.status(500).json({ success: false, message: "Order creation failed", error: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Order creation failed" });
   }
 });
+
 
 
 /* ================= GET ALL ORDERS (ADMIN) ================= */
