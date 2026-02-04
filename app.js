@@ -2,7 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
-
+const compression = require("compression");  // <-- add this line
 const productRoutes = require("./routers/productRoutes");
 const heroRoutes = require("./routers/heroRoutes");
 const adminRoutes = require("./routers/admin");
@@ -10,6 +10,12 @@ const orderRoutes = require("./routers/orderRoutes");
 const sendEmail = require("./utils/sendEmail");
 const contactRoutes = require("./routers/contact");
 const app = express();
+
+
+/* ===========================
+   COMPRESSION (VERY IMPORTANT)
+=========================== */
+app.use(compression());  // <-- add this line here
 
 /* ===========================
    CORS
@@ -93,5 +99,7 @@ app.use("/contact", contactRoutes);
 app.get("/", (req, res) => {
   res.json({ message: "API is running 🚀" });
 });
-
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
 module.exports = app;
