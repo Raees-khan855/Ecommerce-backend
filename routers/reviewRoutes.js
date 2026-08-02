@@ -16,13 +16,16 @@ router.get("/product/:productId", async (req, res) => {
     }).sort({ createdAt: -1 });
 
     res.json(reviews);
-  } catch (err) {
+  } 
+  catch (err) {
+    console.error("Review Error:", err);
+  
     res.status(500).json({
       message: err.message,
+      stack: err.stack,
     });
   }
 });
-
 // CREATE review
 router.post(
   "/",
