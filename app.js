@@ -9,6 +9,8 @@ const adminRoutes = require("./routers/admin");
 const orderRoutes = require("./routers/orderRoutes");
 const sendEmail = require("./utils/sendEmail");
 const contactRoutes = require("./routers/contact");
+const reviewRoutes = require("./routers/reviewRoutes");
+
 const app = express();
 
 
@@ -93,6 +95,8 @@ app.use("/products", productRoutes);
 app.use("/hero", heroRoutes);
 app.use("/orders", orderRoutes);
 app.use("/contact", contactRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/reviews", reviewRoutes);
 /* ===========================
    Health Check
 =========================== */
