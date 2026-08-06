@@ -10,7 +10,7 @@ const orderRoutes = require("./routers/orderRoutes");
 const sendEmail = require("./utils/sendEmail");
 const contactRoutes = require("./routers/contact");
 const reviewRoutes = require("./routers/reviewRoutes");
-
+const faqRoutes = require("./routers/faqRoutes");
 const app = express();
 
 
@@ -97,6 +97,7 @@ app.use("/orders", orderRoutes);
 app.use("/contact", contactRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/faqs", faqRoutes);
 /* ===========================
    Health Check
 =========================== */
