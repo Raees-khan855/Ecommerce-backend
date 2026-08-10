@@ -4,33 +4,72 @@ const router = express.Router();
 const Faq = require("../models/Faq");
 const authMiddleware = require("../middleware/auth");
 
-// =========================
+// ========================================
 // GET ALL FAQS
 // GET /api/faqs
-// =========================
+// ========================================
 router.get("/", async (req, res) => {
   try {
-    const faqs = await Faq.find().sort({
-      order: 1,
-      createdAt: -1,
-    });
+    const faqs = await Faq.find()
+      .populate("productId", "title")
+      .sort({
+        order: 1,
+        createdAt: -1,
+      });
 
     res.status(200).json(faqs);
   } catch (err) {
     console.error("Get FAQs error:", err);
+
     res.status(500).json({
       message: err.message,
     });
   }
 });
 
-// =========================
+// ========================================
+// GET FAQS FOR ONE PRODUCT
+// GET /api/faqs/product/:productId
+// ========================================
+router.get("/product/:productId", async (req, res) => {
+  try {
+    const faqs = await Faq.find({
+      productId: req.params.productId,
+      active: true,
+    }).sort({
+      order: 1,
+      createdAt: -1,
+    });
+
+    res.status(200).json(faqs);
+  } catch (err) {
+    console.error("Get product FAQs error:", err);
+
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+});
+
+// ========================================
 // ADD FAQ
 // POST /api/faqs
-// =========================
+// ========================================
 router.post("/", authMiddleware, async (req, res) => {
   try {
-    const { question, answer, active, order } = req.body;
+    const {
+      productId,
+      question,
+      answer,
+      active,
+      order,
+    } = req.body;
+
+    if (!productId) {
+      return res.status(400).json({
+        message: "Product is required.",
+      });
+    }
 
     if (!question || !answer) {
       return res.status(400).json({
@@ -39,13 +78,19 @@ router.post("/", authMiddleware, async (req, res) => {
     }
 
     const faq = await Faq.create({
+      productId,
       question: question.trim(),
       answer: answer.trim(),
       active: active !== false,
       order: Number(order) || 0,
     });
 
-    res.status(201).json(faq);
+    const populatedFaq = await faq.populate(
+      "productId",
+      "title"
+    );
+
+    res.status(201).json(populatedFaq);
   } catch (err) {
     console.error("Add FAQ error:", err);
 
@@ -55,13 +100,25 @@ router.post("/", authMiddleware, async (req, res) => {
   }
 });
 
-// =========================
+// ========================================
 // UPDATE FAQ
 // PUT /api/faqs/:id
-// =========================
+// ========================================
 router.put("/:id", authMiddleware, async (req, res) => {
   try {
-    const { question, answer, active, order } = req.body;
+    const {
+      productId,
+      question,
+      answer,
+      active,
+      order,
+    } = req.body;
+
+    if (!productId) {
+      return res.status(400).json({
+        message: "Product is required.",
+      });
+    }
 
     if (!question || !answer) {
       return res.status(400).json({
@@ -72,6 +129,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
     const faq = await Faq.findByIdAndUpdate(
       req.params.id,
       {
+        productId,
         question: question.trim(),
         answer: answer.trim(),
         active: active !== false,
@@ -81,7 +139,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
         new: true,
         runValidators: true,
       }
-    );
+    ).populate("productId", "title");
 
     if (!faq) {
       return res.status(404).json({
@@ -99,10 +157,10 @@ router.put("/:id", authMiddleware, async (req, res) => {
   }
 });
 
-// =========================
+// ========================================
 // DELETE FAQ
 // DELETE /api/faqs/:id
-// =========================
+// ========================================
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const faq = await Faq.findByIdAndDelete(req.params.id);
