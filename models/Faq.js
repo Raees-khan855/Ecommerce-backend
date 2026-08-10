@@ -1,13 +1,7 @@
 const mongoose = require("mongoose");
 
-const faqSchema = new mongoose.Schema(
+const faqItemSchema = new mongoose.Schema(
   {
-    productId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Product",
-      required: true,
-    },
-
     question: {
       type: String,
       required: true,
@@ -24,10 +18,27 @@ const faqSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+  },
+  { _id: false }
+);
 
-    order: {
-      type: Number,
-      default: 0,
+const faqSchema = new mongoose.Schema(
+  {
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: true,
+    },
+
+    faqs: {
+      type: [faqItemSchema],
+      required: true,
+      validate: {
+        validator: function (value) {
+          return value.length > 0 && value.length <= 10;
+        },
+        message: "You must have between 1 and 10 FAQs.",
+      },
     },
   },
   {

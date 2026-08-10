@@ -12,10 +12,7 @@ router.get("/", async (req, res) => {
   try {
     const faqs = await Faq.find()
       .populate("productId", "title")
-      .sort({
-        order: 1,
-        createdAt: -1,
-      });
+      .sort({ createdAt: -1 });
 
     res.status(200).json(faqs);
   } catch (err) {
@@ -28,20 +25,24 @@ router.get("/", async (req, res) => {
 });
 
 // ========================================
-// GET FAQS FOR ONE PRODUCT
+// GET FAQs FOR ONE PRODUCT
 // GET /api/faqs/product/:productId
 // ========================================
 router.get("/product/:productId", async (req, res) => {
   try {
-    const faqs = await Faq.find({
+    const faq = await Faq.findOne({
       productId: req.params.productId,
-      active: true,
-    }).sort({
-      order: 1,
-      createdAt: -1,
-    });
+    }).populate("productId", "title");
 
-    res.status(200).json(faqs);
+    if (!faq) {
+      return res.status(200).json([]);
+    }
+
+    const activeFaqs = faq.faqs.filter(
+      (item) => item.active !== false
+    );
+
+    res.status(200).json(activeFaqs);
   } catch (err) {
     console.error("Get product FAQs error:", err);
 
@@ -57,13 +58,7 @@ router.get("/product/:productId", async (req, res) => {
 // ========================================
 router.post("/", authMiddleware, async (req, res) => {
   try {
-    const {
-      productId,
-      question,
-      answer,
-      active,
-      order,
-    } = req.body;
+    const { productId, faqs } = req.body;
 
     if (!productId) {
       return res.status(400).json({
@@ -71,18 +66,44 @@ router.post("/", authMiddleware, async (req, res) => {
       });
     }
 
-    if (!question || !answer) {
+    if (!Array.isArray(faqs) || faqs.length === 0) {
+      return res.status(400).json({
+        message: "At least one question and answer is required.",
+      });
+    }
+
+    if (faqs.length > 10) {
+      return res.status(400).json({
+        message: "Maximum 10 FAQs are allowed.",
+      });
+    }
+
+    const cleanedFaqs = faqs
+      .map((faq) => ({
+        question: faq.question?.trim(),
+        answer: faq.answer?.trim(),
+        active: faq.active !== false,
+      }))
+      .filter((faq) => faq.question && faq.answer);
+
+    if (cleanedFaqs.length === 0) {
       return res.status(400).json({
         message: "Question and answer are required.",
       });
     }
 
+    // Check if FAQs already exist for this product
+    const existingFaq = await Faq.findOne({ productId });
+
+    if (existingFaq) {
+      return res.status(400).json({
+        message: "FAQs already exist for this product. Please edit them instead.",
+      });
+    }
+
     const faq = await Faq.create({
       productId,
-      question: question.trim(),
-      answer: answer.trim(),
-      active: active !== false,
-      order: Number(order) || 0,
+      faqs: cleanedFaqs,
     });
 
     const populatedFaq = await faq.populate(
@@ -106,13 +127,7 @@ router.post("/", authMiddleware, async (req, res) => {
 // ========================================
 router.put("/:id", authMiddleware, async (req, res) => {
   try {
-    const {
-      productId,
-      question,
-      answer,
-      active,
-      order,
-    } = req.body;
+    const { productId, faqs } = req.body;
 
     if (!productId) {
       return res.status(400).json({
@@ -120,7 +135,27 @@ router.put("/:id", authMiddleware, async (req, res) => {
       });
     }
 
-    if (!question || !answer) {
+    if (!Array.isArray(faqs) || faqs.length === 0) {
+      return res.status(400).json({
+        message: "At least one question and answer is required.",
+      });
+    }
+
+    if (faqs.length > 10) {
+      return res.status(400).json({
+        message: "Maximum 10 FAQs are allowed.",
+      });
+    }
+
+    const cleanedFaqs = faqs
+      .map((faq) => ({
+        question: faq.question?.trim(),
+        answer: faq.answer?.trim(),
+        active: faq.active !== false,
+      }))
+      .filter((faq) => faq.question && faq.answer);
+
+    if (cleanedFaqs.length === 0) {
       return res.status(400).json({
         message: "Question and answer are required.",
       });
@@ -130,10 +165,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
       req.params.id,
       {
         productId,
-        question: question.trim(),
-        answer: answer.trim(),
-        active: active !== false,
-        order: Number(order) || 0,
+        faqs: cleanedFaqs,
       },
       {
         new: true,
