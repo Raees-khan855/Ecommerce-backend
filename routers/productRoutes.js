@@ -13,15 +13,36 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const { category, search } = req.query;
+
     const filter = {};
 
-    if (category) filter.category = category;
-    if (search) filter.title = { $regex: search, $options: "i" };
+    // Category filter
+    if (category && category.trim()) {
+      filter.category = {
+        $regex: `^${category.trim()}$`,
+        $options: "i",
+      };
+    }
 
-    const products = await Product.find(filter).sort({ createdAt: -1 });
+    // Search filter
+    if (search && search.trim()) {
+      filter.title = {
+        $regex: search.trim(),
+        $options: "i",
+      };
+    }
+
+    const products = await Product.find(filter).sort({
+      createdAt: -1,
+    });
+
     res.json(products);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("Product fetch error:", err);
+
+    res.status(500).json({
+      message: err.message,
+    });
   }
 });
 
