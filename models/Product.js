@@ -17,6 +17,11 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    
+    compareAtPrice: {
+      type: Number,
+      default: null,
+    },
 
     // Always store category consistently
     category: {
