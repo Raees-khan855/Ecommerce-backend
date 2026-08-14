@@ -31,7 +31,9 @@ router.get("/", async (req, res) => {
 router.get("/featured/all", async (req, res) => {
   const products = await Product.find({ featured: true })
     .limit(8)
-    .select("title price images mainImage category colors sizes");
+    .select(
+      "title price compareAtPrice images mainImage category colors sizes"
+    );
   res.json(products);
 });
 
@@ -54,7 +56,9 @@ router.get("/:id", async (req, res) => {
       _id: { $ne: product._id },
     })
       .limit(4)
-      .select("title price images mainImage category colors sizes");
+      .select(
+        "title price compareAtPrice images mainImage category colors sizes"
+      );
 
     res.json({ product, related });
   } catch (err) {
@@ -71,33 +75,59 @@ router.post(
   upload.array("images", 5),
   async (req, res) => {
     try {
-      const { title, price, description, category, featured, colors, sizes } = req.body;
+      const {
+        title,
+        price,
+        compareAtPrice,
+        description,
+        category,
+        featured,
+        colors,
+        sizes,
+      } = req.body;
 
-      if (!req.files || req.files.length === 0)
-        return res.status(400).json({ message: "At least one image required" });
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({
+          message: "At least one image required",
+        });
+      }
 
       const imageUrls = req.files.map((f) => f.path);
 
       const product = new Product({
         title,
         price: Number(price),
+
+        // Compare-at price
+        compareAtPrice:
+          compareAtPrice !== "" && compareAtPrice != null
+            ? Number(compareAtPrice)
+            : null,
+
         description,
         category,
+
         images: imageUrls,
         mainImage: imageUrls[0],
+
         featured: featured === "true",
-        colors: colors ? JSON.parse(colors) : [], // ✅ parse colors JSON string
-        sizes: sizes ? JSON.parse(sizes) : [],   // ✅ parse sizes JSON string
+
+        colors: colors ? JSON.parse(colors) : [],
+        sizes: sizes ? JSON.parse(sizes) : [],
       });
 
       await product.save();
+
       res.status(201).json(product);
     } catch (err) {
-      res.status(500).json({ message: err.message });
+      console.error("Create product error:", err);
+
+      res.status(500).json({
+        message: err.message,
+      });
     }
   }
 );
-
 /* ===========================
    UPDATE PRODUCT (ADMIN)
 =========================== */
@@ -110,12 +140,25 @@ router.put(
       const product = await Product.findById(req.params.id);
 
       if (!product) return res.status(404).json({ message: "Product not found" });
-
-      const { title, price, description, category, featured, colors, sizes, imageOrder } = req.body;
+      const {
+        title,
+        price,
+        compareAtPrice,
+        description,
+        category,
+        featured,
+        colors,
+        sizes,
+        imageOrder,
+      } = req.body;
 
       // ✅ Update basic fields
       product.title = title;
       product.price = Number(price);
+      product.compareAtPrice =
+  compareAtPrice !== "" && compareAtPrice != null
+    ? Number(compareAtPrice)
+    : null;
       product.description = description;
       product.category = category;
       product.featured = String(featured) === "true";
